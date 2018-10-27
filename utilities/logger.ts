@@ -9,13 +9,26 @@ enum LOGLEVEL {
 }
 
 class Logger {
-    public logger;
+    private logger;
+
     constructor() {
         this.logger = fancyLogger;
     }
 
     public info(msg) {
         this.formatAndPrint(LOGLEVEL.INFO, msg);
+    }
+
+    public debug(msg) {
+        this.formatAndPrint(LOGLEVEL.DEBUG, msg);
+    }
+
+    public warn(msg) {
+        this.formatAndPrint(LOGLEVEL.WARN, msg);
+    }
+
+    public error(msg) {
+        this.formatAndPrint(LOGLEVEL.ERROR, msg);
     }
 
     private formatAndPrint(logLevel: number, msg: string) {
