@@ -1,4 +1,4 @@
-// import * as fs from 'fs-extra';
+
 import * as handlebars from 'handlebars';
 import * as _ from 'lodash';
 import * as npmRun from 'npm-run';
@@ -6,7 +6,7 @@ import * as path from 'path';
 import { logger } from './utilities/logger';
 import { FILENAMES } from './constants/file-names';
 const fs = require('fs-extra');
-const projectPath = path.join(__dirname, '..', '..', '..');
+const projectPath = process.cwd();
 logger.info('Generating TSLint report for project in ' + projectPath);
 export class ReportGenerator {
 
@@ -20,7 +20,7 @@ export class ReportGenerator {
         const angularProjectPath = projectPath + '/' + FILENAMES.angularProject;
         // check for angular.json file
         fs.pathExists(angularProjectPath)
-            .then((angularFileExists) => {
+            .then((angularFileExists: boolean) => {
                 if (!angularFileExists) {
                     logger.error('Please use ngx-tslint-report for Angular2 application');
                 } else {
