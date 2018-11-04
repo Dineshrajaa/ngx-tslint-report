@@ -1,5 +1,5 @@
 const chalk = require('chalk');
-const fancyLogger = require('fancy-log')
+const fancyLogger = require('fancy-log');
 
 enum LOGLEVEL {
     INFO,

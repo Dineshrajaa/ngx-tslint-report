@@ -1,15 +1,16 @@
 
-import * as handlebars from 'handlebars';
-import * as _ from 'lodash';
 import * as path from 'path';
 import { logger } from './utilities/logger';
+import { spinner } from './utilities/spinner';
 import { FILENAMES } from './constants/file-names';
 const fs = require('fs-extra');
+const _ = require('lodash');
 const npmRun = require('npm-run');
+const handlebars = require('handlebars');
 const projectPath = process.cwd();
 logger.info('Generating TSLint report for project in ' + projectPath);
 export class ReportGenerator {
-
+    ngxTslintReportConfig: any = {};
     constructor() {
         this.checkForAngularProject();
     }
@@ -24,7 +25,6 @@ export class ReportGenerator {
                 if (!angularFileExists) {
                     logger.error('Please use ngx-tslint-report for Angular2 application');
                 } else {
-                    logger.info('Running inside angular application');
                     this.checkForTslintReportConfig(); // check for lint report config
                 }
             })
@@ -76,15 +76,23 @@ export class ReportGenerator {
      */
     private readTslintReportConfig() {
         const tslintReportConfigFile = path.join(projectPath, FILENAMES.tslintReportConfig);
-        const tslintCommandParams = '';
         fs.readJson(tslintReportConfigFile)
             .then(tslintReportConfig => {
+                this.ngxTslintReportConfig = tslintReportConfig;
+                const ngxTslintReportJsonPath = path.join(projectPath, tslintReportConfig.reportFolder, tslintReportConfig.ngxtslintjson);
+                // this.ngxTslintReportConfig = path.join(projectPath, tslintReportConfig.reportFolder, tslintReportConfig.ngxtslintjson);
                 const tslintCommandToRun = this.buildTslintParams(tslintReportConfig);
-                this.executeTslintScript(tslintCommandToRun);
+                fs.ensureFile(ngxTslintReportJsonPath)
+                    .then(() => {
+                        this.executeTslintScript(tslintCommandToRun);
+                    })
+                    .catch(err => {
+                        logger.error(err);
+                    });
             })
             .catch(err => {
-                console.error(err)
-            })
+                logger.error(err);
+            });
     }
 
     /**
@@ -92,7 +100,8 @@ export class ReportGenerator {
      * @param tslintReportConfig - TSLint report config
      */
     private buildTslintParams(tslintReportConfig: any): string {
-        const tslintParams = `tslint -c ${tslintReportConfig.tslint} -t json -o ${tslintReportConfig.ngxtslintjson} -p ${tslintReportConfig.tsconfig} --force`;
+        const reportJsonPath = path.join(projectPath, this.ngxTslintReportConfig.reportFolder, this.ngxTslintReportConfig.ngxtslintjson);
+        const tslintParams = `tslint -c ${tslintReportConfig.tslint} -t json -o '${reportJsonPath}' -p ${tslintReportConfig.tsconfig} --force`;
         return tslintParams;
     }
 
@@ -101,6 +110,7 @@ export class ReportGenerator {
      * @param tslintCommandToRun - exact tslint command that has to be executed
      */
     private executeTslintScript(tslintCommandToRun: string) {
+        spinner.show('Analyzing project for TSLint errors');
         npmRun.exec(tslintCommandToRun, { cwd: projectPath },
             (err, stdout, stderr) => {
                 // err Error or null if there was no error
@@ -109,6 +119,78 @@ export class ReportGenerator {
                 if (err) {
                     logger.error(err);
                 }
+                spinner.hide();
+                this.readTslintReport();
+            });
+    }
+
+    /**
+     * Method to read the generated tslint report
+     */
+    private readTslintReport() {
+        spinner.show('Processing TSLint errors');
+        const reportJsonPath = path.join(projectPath, this.ngxTslintReportConfig.reportFolder, this.ngxTslintReportConfig.ngxtslintjson);
+        fs.readJson(reportJsonPath)
+            .then(tslintReport => {
+                spinner.hide();
+                this.processLintErrors(tslintReport);
+            })
+            .catch(err => {
+                logger.error(err);
+            });
+    }
+
+    /**
+     * Method to process the TSLint errors and get the count of errors
+     * @param tsLintErrors - Tslint error object
+     */
+    private processLintErrors(tsLintErrors) {
+        /* const gatheredTslintErrors = JSON.stringify(tsLintErrors);
+        logger.info(gatheredTslintErrors); */
+        const filesAnalyzed = []; // array to hold the file names which are processed
+        const fileNameCollection = {};
+        _.forEach(tsLintErrors, (lintError) => {
+            const isAlreadyErrorReportedInFile = _.includes(filesAnalyzed, lintError.name);
+            if (isAlreadyErrorReportedInFile) {
+                fileNameCollection[lintError.name]++;
+            } else {
+                filesAnalyzed.push(lintError.name);
+                fileNameCollection[lintError.name] = 1;
+            }
+        });
+        const filesCollection = [];
+        // let bugIndex = 0;
+        Object.keys(fileNameCollection).forEach((key) => {
+            filesCollection.push({
+                // index: bugIndex++,
+                name: key,
+                count: fileNameCollection[key],
+                details: _.filter(tsLintErrors, { name: key })
+            });
+        });
+        this.bindTsLintErrorInfoWithTemplate(filesCollection, tsLintErrors.length);
+    }
+
+    /**
+     * Method to bind the TSLint error framed with the Handlebars template
+     * @param filesCollection - list of files and corresponding errors
+     */
+    private bindTsLintErrorInfoWithTemplate(filesCollection, totalTsLintErrorCount) {
+        const tslintReportData = {};
+        tslintReportData['total'] = totalTsLintErrorCount;
+        tslintReportData['errors'] = filesCollection;
+        spinner.show('Generating Tslint report');
+        const ngxTslintHtmlTemplate = fs.readFileSync(path.join(__dirname, 'templates', FILENAMES.tslintReportTemplate), 'utf8');
+        const compiledTemplate = handlebars.compile(ngxTslintHtmlTemplate, {});
+        const reportTemplateWithData = compiledTemplate(tslintReportData);
+        const finalTsLintReportFormat = path.join(projectPath, this.ngxTslintReportConfig.reportFolder, FILENAMES.ngxTsLintReportFile);
+        fs.outputFile(finalTsLintReportFormat, reportTemplateWithData)
+            .then(() => {
+                spinner.hide();
+                logger.info('Generated Tslint report');
+                logger.warn(`Total number of Tslint errors found: ${totalTsLintErrorCount}`);
+            }).catch(err => {
+                logger.error(err);
             });
     }
 

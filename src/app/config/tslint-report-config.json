@@ -1,8 +1,8 @@
 {
     "tslint": "tslint.json",
     "srcFiles": "src/**/*.ts",
-    "reportDir": "reports/tslint-html-report",
-    "json": "ngx-tslint-report.json",
+    "reportFolder": "ngx-tslint-report",
+    "ngxtslintjson": "tslint-report.json",
     "html": "ngx-tslint-report.html",
     "exclude": [],
     "breakOnError": false,
