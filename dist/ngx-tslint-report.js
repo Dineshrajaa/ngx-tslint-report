@@ -159,7 +159,7 @@ var ngxtslintreport = (function (exports) {
   };
 
   var fs = require('fs-extra');
-  // const projectPath = path.join(__dirname, '..', '..', '..');
+  var npmRun = require('npm-run');
   var projectPath = process.cwd();
   logger.info('Generating TSLint report for project in ' + projectPath);
   var ReportGenerator = /** @class */ (function () {
@@ -200,22 +200,70 @@ var ngxtslintreport = (function (exports) {
                   logger.debug('TS lint report config doesn\'t exists');
                   _this.copyTslintReportConfig(); // copy the default tslint report config to the project
               }
+              else {
+                  // logger.info('Running inside angular application');
+                  _this.readTslintReportConfig();
+              }
           })
               .catch(function (err) {
               logger.error('Unable to find/create TS lint report config');
           });
       };
+      /**
+       * Method to copy the tslint-report config to the project folder
+       */
       ReportGenerator.prototype.copyTslintReportConfig = function () {
+          var _this = this;
           logger.debug('Copying default tslint report config');
           var tslintConfigSrc = join(__dirname, 'config', FILENAMES.tslintReportConfig);
-          var tslintConfigDes = projectPath + '/' + FILENAMES.tslintReportConfig;
+          var tslintConfigDes = join(projectPath, FILENAMES.tslintReportConfig);
           fs.copy(tslintConfigSrc, tslintConfigDes)
               .then(function () {
               logger.info('Copied default config');
+              _this.readTslintReportConfig();
           })
               .catch(function (err) {
               logger.error(err);
               logger.error('Unable to find/create TS lint report config');
+          });
+      };
+      /**
+       * Method to read the copied tslint-report config
+       */
+      ReportGenerator.prototype.readTslintReportConfig = function () {
+          var _this = this;
+          var tslintReportConfigFile = join(projectPath, FILENAMES.tslintReportConfig);
+          fs.readJson(tslintReportConfigFile)
+              .then(function (tslintReportConfig) {
+              var tslintCommandToRun = _this.buildTslintParams(tslintReportConfig);
+              _this.executeTslintScript(tslintCommandToRun);
+          })
+              .catch(function (err) {
+              console.error(err);
+          });
+      };
+      /**
+       * Method to construct the tslint params
+       * @param tslintReportConfig - TSLint report config
+       */
+      ReportGenerator.prototype.buildTslintParams = function (tslintReportConfig) {
+          var tslintParams = "tslint -c " + tslintReportConfig.tslint + " -t json -o " + tslintReportConfig.ngxtslintjson + " -p " + tslintReportConfig.tsconfig + " --force";
+          return tslintParams;
+      };
+      /**
+       * Method to start the tslint script in the folder
+       * @param tslintCommandToRun - exact tslint command that has to be executed
+       */
+      ReportGenerator.prototype.executeTslintScript = function (tslintCommandToRun) {
+          logger.debug(tslintCommandToRun);
+          npmRun.exec(tslintCommandToRun, { cwd: projectPath }, function (err, stdout, stderr) {
+              // err Error or null if there was no error
+              // stdout Buffer|String
+              // stderr Buffer|String
+              if (err) {
+                  logger.error(err);
+              }
+              logger.info(stdout);
           });
       };
       return ReportGenerator;
