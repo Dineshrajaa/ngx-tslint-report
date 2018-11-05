@@ -183,15 +183,16 @@ var ngxtslintreport = (function (exports) {
       'angularProject': 'angular.json',
       'tslintReportConfig': 'tslint-report-config.json',
       'tslintReportTemplate': 'ngx-ts-lint-report-template.hbs',
-      'ngxTsLintReportFile': 'ngx-ts-lint-report.html'
+      'ngxTsLintReportFile': 'index.html'
   };
 
   var fs = require('fs-extra');
   var _ = require('lodash');
   var npmRun = require('npm-run');
   var handlebars = require('handlebars');
+  var portDetector = require('detect-port');
   var projectPath = process.cwd();
-  logger.info('Generating TSLint report for project in ' + projectPath);
+  var httpServer = require('http-server');
   var ReportGenerator = /** @class */ (function () {
       function ReportGenerator() {
           this.ngxTslintReportConfig = {};
@@ -202,6 +203,7 @@ var ngxtslintreport = (function (exports) {
        */
       ReportGenerator.prototype.checkForAngularProject = function () {
           var _this = this;
+          logger.info('Generating TSLint report for project in ' + projectPath);
           var angularProjectPath = projectPath + '/' + FILENAMES.angularProject;
           // check for angular.json file
           fs.pathExists(angularProjectPath)
@@ -231,7 +233,6 @@ var ngxtslintreport = (function (exports) {
                   _this.copyTslintReportConfig(); // copy the default tslint report config to the project
               }
               else {
-                  // logger.info('Running inside angular application');
                   _this.readTslintReportConfig();
               }
           })
@@ -360,6 +361,7 @@ var ngxtslintreport = (function (exports) {
        * @param filesCollection - list of files and corresponding errors
        */
       ReportGenerator.prototype.bindTsLintErrorInfoWithTemplate = function (filesCollection, totalTsLintErrorCount) {
+          var _this = this;
           var tslintReportData = {};
           tslintReportData['total'] = totalTsLintErrorCount;
           tslintReportData['errors'] = filesCollection;
@@ -373,8 +375,43 @@ var ngxtslintreport = (function (exports) {
               spinner.hide();
               logger.info('Generated Tslint report');
               logger.warn("Total number of Tslint errors found: " + totalTsLintErrorCount);
+              _this.isPortAvailable(_this.ngxTslintReportConfig.reportHostPort); // start serving the file
           }).catch(function (err) {
               logger.error(err);
+          });
+      };
+      /**
+       * Method to check whether a port is available or not
+       * @param portNumber - port number to be analyzed for availability
+       */
+      ReportGenerator.prototype.isPortAvailable = function (portNumber) {
+          var _this = this;
+          portDetector(portNumber)
+              .then(function (_port) {
+              if (portNumber != _port) {
+                  portNumber = _port;
+              }
+              _this.launchNgxTslintReport(portNumber);
+          })
+              .catch(function (err) {
+              console.log(err);
+          });
+      };
+      /**
+       * Method to start a local server with the file
+       * @param portNumber - port number where report has to be launched
+       */
+      ReportGenerator.prototype.launchNgxTslintReport = function (portNumber) {
+          var ngxTslintReportToShow = join(projectPath, this.ngxTslintReportConfig.reportFolder);
+          logger.warn(ngxTslintReportToShow);
+          var httpServerCommand = "http-server " + ngxTslintReportToShow + " -p " + portNumber + " -o";
+          npmRun.exec(httpServerCommand, { cwd: projectPath }, function (err, stdout, stderr) {
+              // err Error or null if there was no error
+              // stdout Buffer|String
+              // stderr Buffer|String
+              if (err) {
+                  logger.error(err);
+              }
           });
       };
       return ReportGenerator;

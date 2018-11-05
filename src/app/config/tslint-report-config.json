@@ -7,5 +7,5 @@
     "exclude": [],
     "breakOnError": false,
     "tsconfig": "tsconfig.json",
-    "typeCheck": false
+    "reportHostPort": 8090
 }

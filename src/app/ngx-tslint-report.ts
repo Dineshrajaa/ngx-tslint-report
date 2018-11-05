@@ -7,8 +7,9 @@ const fs = require('fs-extra');
 const _ = require('lodash');
 const npmRun = require('npm-run');
 const handlebars = require('handlebars');
+const portDetector = require('detect-port');
 const projectPath = process.cwd();
-logger.info('Generating TSLint report for project in ' + projectPath);
+const httpServer = require('http-server');
 export class ReportGenerator {
     ngxTslintReportConfig: any = {};
     constructor() {
@@ -18,6 +19,7 @@ export class ReportGenerator {
      * Method to check whether user trying to create TSLint report for angular2+ application
      */
     private checkForAngularProject() {
+        logger.info('Generating TSLint report for project in ' + projectPath);
         const angularProjectPath = projectPath + '/' + FILENAMES.angularProject;
         // check for angular.json file
         fs.pathExists(angularProjectPath)
@@ -45,7 +47,6 @@ export class ReportGenerator {
                     logger.debug('TS lint report config doesn\'t exists');
                     this.copyTslintReportConfig(); // copy the default tslint report config to the project
                 } else {
-                    // logger.info('Running inside angular application');
                     this.readTslintReportConfig();
                 }
             })
@@ -189,8 +190,45 @@ export class ReportGenerator {
                 spinner.hide();
                 logger.info('Generated Tslint report');
                 logger.warn(`Total number of Tslint errors found: ${totalTsLintErrorCount}`);
+                this.isPortAvailable(this.ngxTslintReportConfig.reportHostPort);// start serving the file
             }).catch(err => {
                 logger.error(err);
+            });
+    }
+
+    /**
+     * Method to check whether a port is available or not
+     * @param portNumber - port number to be analyzed for availability
+     */
+    private isPortAvailable(portNumber: number) {
+        portDetector(portNumber)
+            .then(_port => {
+                if (portNumber != _port) {
+                    portNumber = _port;
+                }
+                this.launchNgxTslintReport(portNumber);
+            })
+            .catch(err => {
+                console.log(err);
+            });
+    }
+
+    /**
+     * Method to start a local server with the file
+     * @param portNumber - port number where report has to be launched
+     */
+    private launchNgxTslintReport(portNumber: number) {
+        const ngxTslintReportToShow = path.join(projectPath, this.ngxTslintReportConfig.reportFolder);
+        logger.warn(ngxTslintReportToShow);
+        const httpServerCommand = `http-server ${ngxTslintReportToShow} -p ${portNumber} -o`;
+        npmRun.exec(httpServerCommand, { cwd: projectPath },
+            (err, stdout, stderr) => {
+                // err Error or null if there was no error
+                // stdout Buffer|String
+                // stderr Buffer|String
+                if (err) {
+                    logger.error(err);
+                }
             });
     }
 
