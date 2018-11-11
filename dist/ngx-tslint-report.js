@@ -181,6 +181,7 @@ var ngxtslintreport = (function (exports) {
 
   var FILENAMES = {
       'angularProject': 'angular.json',
+      "reportFolder": "ngx-tslint-report",
       'tslintReportConfig': 'tslint-report-config.json',
       'tslintReportTemplate': 'ngx-ts-lint-report-template.hbs',
       'ngxTsLintReportFile': 'index.html'
@@ -204,7 +205,7 @@ var ngxtslintreport = (function (exports) {
       ReportGenerator.prototype.checkForAngularProject = function () {
           var _this = this;
           logger.info('Generating TSLint report for project in ' + projectPath);
-          var angularProjectPath = projectPath + '/' + FILENAMES.angularProject;
+          var angularProjectPath = join(projectPath, FILENAMES.angularProject);
           // check for angular.json file
           fs.pathExists(angularProjectPath)
               .then(function (angularFileExists) {
@@ -224,7 +225,7 @@ var ngxtslintreport = (function (exports) {
        */
       ReportGenerator.prototype.checkForTslintReportConfig = function () {
           var _this = this;
-          var tslintReportConfig = projectPath + '/' + FILENAMES.tslintReportConfig;
+          var tslintReportConfig = join(projectPath, FILENAMES.reportFolder, FILENAMES.tslintReportConfig);
           // check for tslint-report-config.json file
           fs.pathExists(tslintReportConfig)
               .then(function (tslintReportConfigExists) {
@@ -247,7 +248,7 @@ var ngxtslintreport = (function (exports) {
           var _this = this;
           logger.debug('Copying default tslint report config');
           var tslintConfigSrc = join(__dirname, 'config', FILENAMES.tslintReportConfig);
-          var tslintConfigDes = join(projectPath, FILENAMES.tslintReportConfig);
+          var tslintConfigDes = join(projectPath, FILENAMES.reportFolder, FILENAMES.tslintReportConfig);
           fs.copy(tslintConfigSrc, tslintConfigDes)
               .then(function () {
               logger.info('Copied default config');
@@ -263,13 +264,13 @@ var ngxtslintreport = (function (exports) {
        */
       ReportGenerator.prototype.readTslintReportConfig = function () {
           var _this = this;
-          var tslintReportConfigFile = join(projectPath, FILENAMES.tslintReportConfig);
+          var tslintReportConfigFile = join(projectPath, FILENAMES.reportFolder, FILENAMES.tslintReportConfig);
           fs.readJson(tslintReportConfigFile)
               .then(function (tslintReportConfig) {
               _this.ngxTslintReportConfig = tslintReportConfig;
-              var ngxTslintReportJsonPath = join(projectPath, tslintReportConfig.reportFolder, tslintReportConfig.ngxtslintjson);
-              // this.ngxTslintReportConfig = path.join(projectPath, tslintReportConfig.reportFolder, tslintReportConfig.ngxtslintjson);
+              var ngxTslintReportJsonPath = join(projectPath, FILENAMES.reportFolder, tslintReportConfig.ngxtslintjson);
               var tslintCommandToRun = _this.buildTslintParams(tslintReportConfig);
+              logger.error(tslintCommandToRun);
               fs.ensureFile(ngxTslintReportJsonPath)
                   .then(function () {
                   _this.executeTslintScript(tslintCommandToRun);
@@ -287,8 +288,17 @@ var ngxtslintreport = (function (exports) {
        * @param tslintReportConfig - TSLint report config
        */
       ReportGenerator.prototype.buildTslintParams = function (tslintReportConfig) {
-          var reportJsonPath = join(projectPath, this.ngxTslintReportConfig.reportFolder, this.ngxTslintReportConfig.ngxtslintjson);
-          var tslintParams = "tslint -c " + tslintReportConfig.tslint + " -t json -o '" + reportJsonPath + "' -p " + tslintReportConfig.tsconfig + " --force";
+          var reportJsonPath = join(projectPath, FILENAMES.reportFolder, this.ngxTslintReportConfig.ngxtslintjson);
+          // const pathToExcludeTsLint = tslintReportConfig.exclude.join(' ');
+          var excludeGlobList = '';
+          // TBD: Inject exclude option once an update released for tslint fixing https://github.com/palantir/tslint/issues/3881
+          if (tslintReportConfig.exclude && tslintReportConfig.exclude.length > 0) {
+              _.forEach(tslintReportConfig.exclude, function (excludeGlob) {
+                  var absolutePathToExclude = join(projectPath, excludeGlob);
+                  excludeGlobList += "-e '" + absolutePathToExclude + "'";
+              });
+          }
+          var tslintParams = "tslint -c " + tslintReportConfig.tslint + " -t json -o " + reportJsonPath + " -p " + tslintReportConfig.tsconfig + " " + excludeGlobList + " --force";
           return tslintParams;
       };
       /**
@@ -297,7 +307,7 @@ var ngxtslintreport = (function (exports) {
        */
       ReportGenerator.prototype.executeTslintScript = function (tslintCommandToRun) {
           var _this = this;
-          spinner.show('Analyzing project for TSLint errors');
+          spinner.show('Analyzing project for TSlint errors');
           npmRun.exec(tslintCommandToRun, { cwd: projectPath }, function (err, stdout, stderr) {
               // err Error or null if there was no error
               // stdout Buffer|String
@@ -315,7 +325,7 @@ var ngxtslintreport = (function (exports) {
       ReportGenerator.prototype.readTslintReport = function () {
           var _this = this;
           spinner.show('Processing TSLint errors');
-          var reportJsonPath = join(projectPath, this.ngxTslintReportConfig.reportFolder, this.ngxTslintReportConfig.ngxtslintjson);
+          var reportJsonPath = join(projectPath, FILENAMES.reportFolder, this.ngxTslintReportConfig.ngxtslintjson);
           fs.readJson(reportJsonPath)
               .then(function (tslintReport) {
               spinner.hide();
@@ -369,7 +379,7 @@ var ngxtslintreport = (function (exports) {
           var ngxTslintHtmlTemplate = fs.readFileSync(join(__dirname, 'templates', FILENAMES.tslintReportTemplate), 'utf8');
           var compiledTemplate = handlebars.compile(ngxTslintHtmlTemplate, {});
           var reportTemplateWithData = compiledTemplate(tslintReportData);
-          var finalTsLintReportFormat = join(projectPath, this.ngxTslintReportConfig.reportFolder, FILENAMES.ngxTsLintReportFile);
+          var finalTsLintReportFormat = join(projectPath, FILENAMES.reportFolder, FILENAMES.ngxTsLintReportFile);
           fs.outputFile(finalTsLintReportFormat, reportTemplateWithData)
               .then(function () {
               spinner.hide();
@@ -402,9 +412,8 @@ var ngxtslintreport = (function (exports) {
        * @param portNumber - port number where report has to be launched
        */
       ReportGenerator.prototype.launchNgxTslintReport = function (portNumber) {
-          var ngxTslintReportToShow = join(projectPath, this.ngxTslintReportConfig.reportFolder);
-          logger.warn(ngxTslintReportToShow);
-          var httpServerCommand = "http-server " + ngxTslintReportToShow + " -p " + portNumber + " -o";
+          var ngxTslintReportToShow = join(projectPath, FILENAMES.reportFolder);
+          var httpServerCommand = "http-server " + ngxTslintReportToShow + " -c10 -p " + portNumber + " -o";
           npmRun.exec(httpServerCommand, { cwd: projectPath }, function (err, stdout, stderr) {
               // err Error or null if there was no error
               // stdout Buffer|String

@@ -1,7 +1,7 @@
 {
   "name": "ngx-tslint-report",
-  "version": "0.0.1",
-  "description": "A tool to get the list of Lint errors in .ts files",
+  "version": "1.0.0",
+  "description": "A tool to generate a report of TSlint errors",
   "bin": {
     "ngxtslintreport": "dist/ngx-tslint-report.js"
   },
