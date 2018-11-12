@@ -101,7 +101,7 @@ export class ReportGenerator {
         fs.readJson(tslintReportConfigFile)
             .then(tslintReportConfig => {
                 this.ngxTslintReportConfig = tslintReportConfig;
-                const ngxTslintReportJsonPath = path.join(projectPath, FILENAMES.reportFolder, tslintReportConfig.ngxtslintjson);
+                const ngxTslintReportJsonPath = path.join(projectPath, FILENAMES.reportFolder, FILENAMES.ngxtslintjson);
                 const tslintCommandToRun = this.buildTslintParams(tslintReportConfig);
                 fs.ensureFile(ngxTslintReportJsonPath)
                     .then(() => {
@@ -123,7 +123,7 @@ export class ReportGenerator {
      * @param tslintReportConfig - TSLint report config
      */
     private buildTslintParams(tslintReportConfig: any): string {
-        const reportJsonPath = path.join(projectPath, FILENAMES.reportFolder, this.ngxTslintReportConfig.ngxtslintjson);
+        const reportJsonPath = path.join(projectPath, FILENAMES.reportFolder, FILENAMES.ngxtslintjson);
         // const pathToExcludeTsLint = tslintReportConfig.exclude.join(' ');
         let excludeGlobList = '';
         // TBD: Inject exclude option once an update released for tslint fixing https://github.com/palantir/tslint/issues/3881
@@ -158,7 +158,7 @@ export class ReportGenerator {
      */
     private readTslintReport() {
         spinner.show('Processing TSLint errors');
-        const reportJsonPath = path.join(projectPath, FILENAMES.reportFolder, this.ngxTslintReportConfig.ngxtslintjson);
+        const reportJsonPath = path.join(projectPath, FILENAMES.reportFolder, FILENAMES.ngxtslintjson);
         fs.readJson(reportJsonPath)
             .then(tslintReport => {
                 spinner.hide();
