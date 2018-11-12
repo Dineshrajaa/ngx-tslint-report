@@ -181,7 +181,8 @@ var ngxtslintreport = (function (exports) {
 
   var FILENAMES = {
       'angularProject': 'angular.json',
-      "reportFolder": "ngx-tslint-report",
+      'packageFile': 'package.json',
+      'reportFolder': 'ngx-tslint-report',
       'tslintReportConfig': 'tslint-report-config.json',
       'tslintReportTemplate': 'ngx-ts-lint-report-template.hbs',
       'ngxTsLintReportFile': 'index.html'
@@ -198,7 +199,26 @@ var ngxtslintreport = (function (exports) {
       function ReportGenerator() {
           this.ngxTslintReportConfig = {};
           this.checkForAngularProject();
+          this.initializIncrementHelper();
+          this.initializLengthCheckHelper();
       }
+      /**
+       * Increment index helper
+       */
+      ReportGenerator.prototype.initializIncrementHelper = function () {
+          handlebars.registerHelper("incIndex", function (value) {
+              return parseInt(value) + 1;
+          });
+      };
+      ReportGenerator.prototype.initializLengthCheckHelper = function () {
+          var _this = this;
+          handlebars.registerHelper("ifLength", function (iterable, sizeExpected, options) {
+              if (iterable.length > sizeExpected) {
+                  return options.fn(_this);
+              }
+              return options.inverse(_this);
+          });
+      };
       /**
        * Method to check whether user trying to create TSLint report for angular2+ application
        */
@@ -345,6 +365,9 @@ var ngxtslintreport = (function (exports) {
           var filesAnalyzed = []; // array to hold the file names which are processed
           var fileNameCollection = {};
           _.forEach(tsLintErrors, function (lintError) {
+              lintError['name'] = lintError['name'].replace(projectPath, '');
+          });
+          _.forEach(tsLintErrors, function (lintError) {
               var isAlreadyErrorReportedInFile = _.includes(filesAnalyzed, lintError.name);
               if (isAlreadyErrorReportedInFile) {
                   fileNameCollection[lintError.name]++;
@@ -355,10 +378,9 @@ var ngxtslintreport = (function (exports) {
               }
           });
           var filesCollection = [];
-          // let bugIndex = 0;
-          Object.keys(fileNameCollection).forEach(function (key) {
+          Object.keys(fileNameCollection).forEach(function (key, bugIndex) {
               filesCollection.push({
-                  // index: bugIndex++,
+                  index: bugIndex + 1,
                   name: key,
                   count: fileNameCollection[key],
                   details: _.filter(tsLintErrors, { name: key })
@@ -372,9 +394,13 @@ var ngxtslintreport = (function (exports) {
        */
       ReportGenerator.prototype.bindTsLintErrorInfoWithTemplate = function (filesCollection, totalTsLintErrorCount) {
           var _this = this;
+          var projectPackageInfo = fs.readFileSync(join(projectPath, FILENAMES.packageFile), 'utf8');
+          var parsedPackageInfo = JSON.parse(projectPackageInfo);
+          logger.error(parsedPackageInfo);
           var tslintReportData = {};
           tslintReportData['total'] = totalTsLintErrorCount;
           tslintReportData['errors'] = filesCollection;
+          tslintReportData['projectName'] = parsedPackageInfo.name;
           spinner.show('Generating Tslint report');
           var ngxTslintHtmlTemplate = fs.readFileSync(join(__dirname, 'templates', FILENAMES.tslintReportTemplate), 'utf8');
           var compiledTemplate = handlebars.compile(ngxTslintHtmlTemplate, {});
@@ -415,9 +441,6 @@ var ngxtslintreport = (function (exports) {
           var ngxTslintReportToShow = join(projectPath, FILENAMES.reportFolder);
           var httpServerCommand = "http-server " + ngxTslintReportToShow + " -c10 -p " + portNumber + " -o";
           npmRun.exec(httpServerCommand, { cwd: projectPath }, function (err, stdout, stderr) {
-              // err Error or null if there was no error
-              // stdout Buffer|String
-              // stderr Buffer|String
               if (err) {
                   logger.error(err);
               }

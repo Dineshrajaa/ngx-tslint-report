@@ -14,6 +14,26 @@ export class ReportGenerator {
     ngxTslintReportConfig: any = {};
     constructor() {
         this.checkForAngularProject();
+        this.initializIncrementHelper();
+        this.initializLengthCheckHelper();
+    }
+
+    /**
+     * Increment index helper
+     */
+    private initializIncrementHelper() {
+        handlebars.registerHelper("incIndex", (value: string) => {
+            return parseInt(value) + 1;
+        });
+    }
+
+    private initializLengthCheckHelper() {
+        handlebars.registerHelper("ifLength", (iterable, sizeExpected, options) => {
+            if (iterable.length > sizeExpected) {
+                return options.fn(this);
+            }
+            return options.inverse(this);
+        });
     }
     /**
      * Method to check whether user trying to create TSLint report for angular2+ application
@@ -160,6 +180,9 @@ export class ReportGenerator {
         const filesAnalyzed = []; // array to hold the file names which are processed
         const fileNameCollection = {};
         _.forEach(tsLintErrors, (lintError) => {
+            lintError['name'] = lintError['name'].replace(projectPath, '');
+        });
+        _.forEach(tsLintErrors, (lintError) => {
             const isAlreadyErrorReportedInFile = _.includes(filesAnalyzed, lintError.name);
             if (isAlreadyErrorReportedInFile) {
                 fileNameCollection[lintError.name]++;
@@ -169,10 +192,9 @@ export class ReportGenerator {
             }
         });
         const filesCollection = [];
-        // let bugIndex = 0;
-        Object.keys(fileNameCollection).forEach((key) => {
+        Object.keys(fileNameCollection).forEach((key, bugIndex) => {
             filesCollection.push({
-                // index: bugIndex++,
+                index: bugIndex + 1,
                 name: key,
                 count: fileNameCollection[key],
                 details: _.filter(tsLintErrors, { name: key })
@@ -186,9 +208,13 @@ export class ReportGenerator {
      * @param filesCollection - list of files and corresponding errors
      */
     private bindTsLintErrorInfoWithTemplate(filesCollection, totalTsLintErrorCount) {
+        const projectPackageInfo = fs.readFileSync(path.join(projectPath, FILENAMES.packageFile), 'utf8');
+        const parsedPackageInfo = JSON.parse(projectPackageInfo);
+        logger.error(parsedPackageInfo);
         const tslintReportData = {};
         tslintReportData['total'] = totalTsLintErrorCount;
         tslintReportData['errors'] = filesCollection;
+        tslintReportData['projectName'] = parsedPackageInfo.name;
         spinner.show('Generating Tslint report');
         const ngxTslintHtmlTemplate = fs.readFileSync(path.join(__dirname, 'templates', FILENAMES.tslintReportTemplate), 'utf8');
         const compiledTemplate = handlebars.compile(ngxTslintHtmlTemplate, {});
@@ -231,9 +257,6 @@ export class ReportGenerator {
         const httpServerCommand = `http-server ${ngxTslintReportToShow} -c10 -p ${portNumber} -o`;
         npmRun.exec(httpServerCommand, { cwd: projectPath },
             (err, stdout, stderr) => {
-                // err Error or null if there was no error
-                // stdout Buffer|String
-                // stderr Buffer|String
                 if (err) {
                     logger.error(err);
                 }
