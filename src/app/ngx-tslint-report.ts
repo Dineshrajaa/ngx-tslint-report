@@ -89,6 +89,7 @@ export class ReportGenerator {
             .catch(err => {
                 logger.error(err);
                 logger.error('Unable to find/create TS lint report config');
+                process.exit(1);
             });
     }
 
@@ -102,17 +103,18 @@ export class ReportGenerator {
                 this.ngxTslintReportConfig = tslintReportConfig;
                 const ngxTslintReportJsonPath = path.join(projectPath, FILENAMES.reportFolder, tslintReportConfig.ngxtslintjson);
                 const tslintCommandToRun = this.buildTslintParams(tslintReportConfig);
-                logger.error(tslintCommandToRun);
                 fs.ensureFile(ngxTslintReportJsonPath)
                     .then(() => {
                         this.executeTslintScript(tslintCommandToRun);
                     })
                     .catch(err => {
                         logger.error(err);
+                        process.exit(1);
                     });
             })
             .catch(err => {
                 logger.error(err);
+                process.exit(1);
             });
     }
 
@@ -143,9 +145,6 @@ export class ReportGenerator {
         spinner.show('Analyzing project for TSlint errors');
         npmRun.exec(tslintCommandToRun, { cwd: projectPath },
             (err, stdout, stderr) => {
-                // err Error or null if there was no error
-                // stdout Buffer|String
-                // stderr Buffer|String
                 if (err) {
                     logger.error(err);
                 }
@@ -167,6 +166,7 @@ export class ReportGenerator {
             })
             .catch(err => {
                 logger.error(err);
+                process.exit(1);
             });
     }
 
@@ -210,7 +210,6 @@ export class ReportGenerator {
     private bindTsLintErrorInfoWithTemplate(filesCollection, totalTsLintErrorCount) {
         const projectPackageInfo = fs.readFileSync(path.join(projectPath, FILENAMES.packageFile), 'utf8');
         const parsedPackageInfo = JSON.parse(projectPackageInfo);
-        logger.error(parsedPackageInfo);
         const tslintReportData = {};
         tslintReportData['total'] = totalTsLintErrorCount;
         tslintReportData['errors'] = filesCollection;
@@ -228,6 +227,7 @@ export class ReportGenerator {
                 this.isPortAvailable(this.ngxTslintReportConfig.reportHostPort);// start serving the file
             }).catch(err => {
                 logger.error(err);
+                process.exit(1);
             });
     }
 
@@ -244,7 +244,8 @@ export class ReportGenerator {
                 this.launchNgxTslintReport(portNumber);
             })
             .catch(err => {
-                console.log(err);
+                logger.error(err);
+                process.exit(1);
             });
     }
 
