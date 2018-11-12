@@ -1,11 +1,6 @@
 {
     "tslint": "tslint.json",
-    "srcFiles": "src/**/*.ts",
-    "reportFolder": "ngx-tslint-report",
     "ngxtslintjson": "tslint-report.json",
-    "html": "ngx-tslint-report.html",
-    "exclude": [],
-    "breakOnError": false,
     "tsconfig": "tsconfig.json",
     "reportHostPort": 8090
 }

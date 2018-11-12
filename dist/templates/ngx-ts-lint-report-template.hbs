@@ -1,83 +1,94 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 
 <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>ngx-tslint-report</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link type="text/css" rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
-    <title>TSLint Report</title>
-    <style>
-        .badge-success {
-            background-color: green;
-        }
-        
-        .badge-error {
-            background-color: red;
-        }
-        .error-div span {
-            padding: 10px;
-        }
-    </style>
+    <link rel="stylesheet" type="text/css" media="screen" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" type="text/css" media="screen" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.3/css/bootstrap.min.css" />
 </head>
 
-<body>
-    <div class="container">
-        <h1 class="text-center">TSLint Error Report</h1>
-        <p>Total Lint Errors: <span class="badge badge-error">{{total}}</span></p>
-
-        <div class="row error-div">
-            <span class="col-lg-1">No.</span>
-            <span class="col-lg-8">File Path</span>
-            <span class="col-lg-2 col-lg-pull-1 col-lg-offset-1">Count</span>
-        </div>
-
-        {{#each errors as |error|}}
-        <div>
-            <div class="row error-div">
-                <span class="col-lg-1">{{@index}}</span>
-                <span class="col-lg-8">{{error.name}}</span>
-                <span class="col-lg-2">{{error.count}}</span>
-                <span class="col-lg-1"><button id="button{{@index}}" onclick="expandTable({{@index}})">Expand</button></span>
-            </div>
-            <div id="detail{{@index}}" class="col-lg-12" style="display: none">
-                <table class="table table-hover table-sm table-striped">
-                    <thead class="thead-inverse">
-                        <tr>
-                            <th style="width: 7%">No.</th>
-                            <th style="width: 50%">Failure</th>
-                            <th>Rule Name</th>
-                            <th>Start Position</th>
-                            <th>End Position</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {{#each error.details as |detail| }}
-                        <tr>
-                            <td>{{@index}}</td>
-                            <td>{{detail.failure}}</td>
-                            <td>{{detail.ruleName}}</td>
-                            <td>Line: {{detail.startPosition.line}}, Col: {{detail.startPosition.character}}</td>
-                            <td>Line: {{detail.endPosition.line}}, Col: {{detail.endPosition.character}}</td>
-                        </tr>
-                        {{/each}}
-                    </tbody>
-                </table>
+<body class="container">
+    <header class="jumbotron">
+        <div class="row">
+            <div class="col">
+                <h1 class="text-center">TSLint report</h1>
+                <h3 class="text-center">Project name:&nbsp;
+                    <span>{{projectName}}</span>
+                </h3>
+                <h4 class="text-center">Total lint errors:&nbsp;
+                    <span class="badge badge-danger">{{total}}</span>
+                </h4>
             </div>
         </div>
-        {{/each}}
-        <div style="position: fixed;right: 10px;bottom: 10px">
-            <button class="btn btn-primary" onclick="scrollToTop()" style="">Scroll top</button>
-        </div>
-    </div>
+
+    </header>
+    <section>
+        <table class="table table-hover table-bordered table-sm table-striped" style="margin-bottom:0">
+            <thead>
+                <tr>
+                    <th>No.</th>
+                    <th>File Path</th>
+                    <th>Error count</th>
+                    <th>Review</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#each errors as |error|}}
+                <tr>
+                    <td>{{error.index}}</td>
+                    <td>{{error.name}}</td>
+                    <td>{{error.count}}</td>
+                    <td class="text-center">
+                        <button id="button{{error.index}}" class="btn btn-light" onclick="expandTable({{error.index}})"><i
+                                id="icon{{error.index}}" class="fa fa-eye" aria-hidden="true"></i></button>
+                    </td>
+                </tr>
+                <tr>
+                    <table class="table table-hover table-bordered table-sm table-striped" id="detail{{error.index}}"
+                        style="display: none">
+                        <thead class="thead-inverse">
+                            <tr>
+                                <th>No.</th>
+                                <th style="width: 48%">Failure</th>
+                                <th>Rule Name</th>
+                                <th>Start Position</th>
+                                <th>End Position</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{#each error.details as |detail| }}
+                            <tr>
+                                <td>{{incIndex @index}}</td>
+                                <td>{{detail.failure}}</td>
+                                <td>{{detail.ruleName}}</td>
+                                <td>Line: {{detail.startPosition.line}}, Col: {{detail.startPosition.character}}</td>
+                                <td>Line: {{detail.endPosition.line}}, Col: {{detail.endPosition.character}}</td>
+                            </tr>
+                            {{/each}}
+                        </tbody>
+                    </table>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
+    </section>
 </body>
-
 <script>
     function expandTable(id) {
-        let element = document.getElementById('detail'+id);
-        element.style.display = (element.style.display === 'none') ? 'block' : 'none';
-        document.getElementById('button'+id).textContent = (document.getElementById('button'+id).textContent === 'Expand') ?
-            'Collapse' : 'Expand';
+        let detailElement = document.getElementById('detail' + id);
+        detailElement.style.display = (detailElement.style.display === 'none') ? 'table' : 'none';
+        let clickedButton = document.getElementById('icon' + id);
+        let isDetailClosed = clickedButton.classList.contains('fa-eye');
+        if (isDetailClosed) {
+            clickedButton.classList.remove('fa-eye');
+            clickedButton.classList.add('fa-eye-slash');
+        } else {
+            clickedButton.classList.remove('fa-eye-slash');
+            clickedButton.classList.add('fa-eye');
+        }
     }
 
     function scrollToTop() {
