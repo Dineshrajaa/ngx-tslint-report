@@ -35,4 +35,4 @@ Executing the above script or `ngxtslintreport` for the first time will generate
 
 **Screenshots**
 ***
-![ngx-tslint-report output](/home/dinesh/mywork/gitrepos/ngx-tslint-report/ngx-tslint-report.png  "ngx-tslint-report ")
+![ngx-tslint-report output](https://github.com/Dineshrajaa/ngx-tslint-report/blob/master/ngx-tslint-report.png  "ngx-tslint-report ")
