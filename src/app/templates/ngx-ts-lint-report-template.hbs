@@ -8,6 +8,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" type="text/css" media="screen" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
     <link rel="stylesheet" type="text/css" media="screen" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.3/css/bootstrap.min.css" />
+    <style>
+        .no-padding {
+            padding: 0 !important;
+        }
+
+        .no-bg{
+            backgroun: none !important;
+        }
+    </style>
 </head>
 
 <body class="container">
@@ -47,29 +56,31 @@
                     </td>
                 </tr>
                 <tr>
-                    <table class="table table-hover table-bordered table-sm table-striped" id="detail{{error.index}}"
-                        style="display: none">
-                        <thead class="thead-inverse">
-                            <tr>
-                                <th>No.</th>
-                                <th style="width: 48%">Failure</th>
-                                <th>Rule Name</th>
-                                <th>Start Position</th>
-                                <th>End Position</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {{#each error.details as |detail| }}
-                            <tr>
-                                <td>{{incIndex @index}}</td>
-                                <td>{{detail.failure}}</td>
-                                <td>{{detail.ruleName}}</td>
-                                <td>Line: {{detail.startPosition.line}}, Col: {{detail.startPosition.character}}</td>
-                                <td>Line: {{detail.endPosition.line}}, Col: {{detail.endPosition.character}}</td>
-                            </tr>
-                            {{/each}}
-                        </tbody>
-                    </table>
+                    <td colspan="4" class="no-padding">
+                        <table class="table table-hover table-bordered table-sm table-striped no-bg" id="detail{{error.index}}"
+                            style="display: none">
+                            <thead class="thead-inverse">
+                                <tr>
+                                    <th>No.</th>
+                                    <th style="width: 48%">Failure</th>
+                                    <th>Rule Name</th>
+                                    <th>Start Position</th>
+                                    <th>End Position</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {{#each error.details as |detail| }}
+                                <tr>
+                                    <td>{{incIndex @index}}</td>
+                                    <td>{{detail.failure}}</td>
+                                    <td>{{detail.ruleName}}</td>
+                                    <td>Line: {{detail.startPosition.line}}, Col: {{detail.startPosition.character}}</td>
+                                    <td>Line: {{detail.endPosition.line}}, Col: {{detail.endPosition.character}}</td>
+                                </tr>
+                                {{/each}}
+                            </tbody>
+                        </table>
+                    </td>
                 </tr>
                 {{/each}}
             </tbody>
