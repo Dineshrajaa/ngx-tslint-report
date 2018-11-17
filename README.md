@@ -27,8 +27,8 @@ Executing the above script or `ngxtslintreport` for the first time will generate
     "reportHostPort": 8090
 }
 ```
-`tslint` - File path of tslint config preferred (Default: Current project config)
-`tsconfig` - Typescript config file path (Default: Current project config)
+`tslint` - File path of tslint config preferred (Default: Current project config)<br/>
+`tsconfig` - Typescript config file path (Default: Current project config)<br/>
 `reportHostPort` - Port where TSLint report has to be hosted (Default: 8090)
 
 *Note:* If default/configured `reportHostPort` is in use random port will be picked and report will be served there.

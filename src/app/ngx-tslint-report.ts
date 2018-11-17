@@ -10,12 +10,12 @@ const handlebars = require('handlebars');
 const portDetector = require('detect-port');
 const projectPath = process.cwd();
 const httpServer = require('http-server');
+const moment = require('moment');
 export class ReportGenerator {
     ngxTslintReportConfig: any = {};
     constructor() {
         this.checkForAngularProject();
         this.initializIncrementHelper();
-        this.initializLengthCheckHelper();
     }
 
     /**
@@ -27,14 +27,6 @@ export class ReportGenerator {
         });
     }
 
-    private initializLengthCheckHelper() {
-        handlebars.registerHelper("ifLength", (iterable, sizeExpected, options) => {
-            if (iterable.length > sizeExpected) {
-                return options.fn(this);
-            }
-            return options.inverse(this);
-        });
-    }
     /**
      * Method to check whether user trying to create TSLint report for angular2+ application
      */
@@ -124,7 +116,6 @@ export class ReportGenerator {
      */
     private buildTslintParams(tslintReportConfig: any): string {
         const reportJsonPath = path.join(projectPath, FILENAMES.reportFolder, FILENAMES.ngxtslintjson);
-        // const pathToExcludeTsLint = tslintReportConfig.exclude.join(' ');
         let excludeGlobList = '';
         // TBD: Inject exclude option once an update released for tslint fixing https://github.com/palantir/tslint/issues/3881
         if (tslintReportConfig.exclude && tslintReportConfig.exclude.length > 0) {
@@ -214,6 +205,7 @@ export class ReportGenerator {
         tslintReportData['total'] = totalTsLintErrorCount;
         tslintReportData['errors'] = filesCollection;
         tslintReportData['projectName'] = parsedPackageInfo.name;
+        tslintReportData['generatedDate'] = moment().format("MMM Do YYYY, h:mm:ss a");
         spinner.show('Generating Tslint report');
         const ngxTslintHtmlTemplate = fs.readFileSync(path.join(__dirname, 'templates', FILENAMES.tslintReportTemplate), 'utf8');
         const compiledTemplate = handlebars.compile(ngxTslintHtmlTemplate, {});

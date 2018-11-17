@@ -14,7 +14,18 @@
         }
 
         .no-bg{
-            backgroun: none !important;
+            background: none !important;
+        }
+
+        .bold-text{
+            font-weight: 900;
+        }
+        .date-text{
+            font-size: 16px;
+        }
+        .tool-info{
+            font-size: small;
+            font-style: italic;
         }
     </style>
 </head>
@@ -25,11 +36,15 @@
             <div class="col">
                 <h1 class="text-center">TSLint report</h1>
                 <h3 class="text-center">Project name:&nbsp;
-                    <span>{{projectName}}</span>
+                    <span class="bold-text">{{projectName}}</span>
                 </h3>
                 <h4 class="text-center">Total lint errors:&nbsp;
                     <span class="badge badge-danger">{{total}}</span>
                 </h4>
+                <h5 class="text-center">Generated on:&nbsp;
+                    <span class="date-text">{{generatedDate}}</span>
+                </h5>
+                <div class="tool-info text-center">Powered by&nbsp;<a href="https://www.npmjs.com/package/ngx-tslint-report">ngx-tslint-report</a></div>
             </div>
         </div>
 
