@@ -3,9 +3,9 @@ A tool to generate a report of TSLint errors
 
 **Installation**
 ***
-Install it as a dependency of your Angular application:
+Install it as a dev dependency of your Angular application:
 ```sh
-npm install ngx-tslint-report --save
+npm i -D ngx-tslint-report
 ```
 **Usage**
 ***
