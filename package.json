@@ -1,6 +1,6 @@
 {
   "name": "ngx-tslint-report",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A tool to generate a report of TSLint errors",
   "bin": {
     "ngxtslintreport": "dist/ngx-tslint-report.js"
